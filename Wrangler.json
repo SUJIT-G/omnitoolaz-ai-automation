@@ -5,6 +5,13 @@
   "build": {
     "command": "npm run build",
     "watch_dir": "src"
+  },
+  "vars": {
+    "NODE_VERSION": "18"
+  },
+  "deployment": {
+    "properties": {
+      "framework": "vite"
+    }
   }
 }
-eof
