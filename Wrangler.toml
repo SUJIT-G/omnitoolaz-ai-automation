@@ -1,0 +1,28 @@
+name = "omnitoolz-ai-backend"
+main = "workers/index.ts"
+compatibility_date = "2024-02-22"
+
+# Bind Workers AI
+[ai]
+binding = "AI"
+
+# Bind KV for User Sessions/Tokens
+[[kv_namespaces]]
+binding = "OMNI_KV"
+id = "your-kv-id"
+
+# Bind D1 Database for Posts & Analytics
+[[d1_databases]]
+binding = "DB"
+database_name = "omnitoolz_db"
+database_id = "your-d1-id"
+
+# Bind R2 for Image Storage
+[[r2_buckets]]
+binding = "IMAGE_BUCKET"
+bucket_name = "omnitoolz-generated-images"
+
+# Cron Triggers for Auto-Posting (Runs every 15 mins)
+[triggers]
+crons = ["*/15 * * * *"]
+
