@@ -1,15 +1,21 @@
-import { Env } from '../index';
-
-export async function handleGeneratePost(request: Request, env: Env): Promise<Response> {
-  const { prompt, platform } = await request.json();
-
-  if (!prompt) {
-    return new Response(JSON.stringify({ error: "Prompt is required" }), { status: 400 });
-  }
+export async function handleGeneratePost(request, env) {
+  // CORS Headers zaroori hain taaki website API ko block na kare
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type'
+  };
 
   try {
+    const { prompt, platform } = await request.json();
+
+    if (!prompt) {
+      return new Response(JSON.stringify({ error: "Prompt is required" }), { 
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
     // 1. Generate Caption & Hashtags using Llama 3
-    // We pass context based on the target platform (e.g., Instagram vs LinkedIn)
     const captionResponse = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
       messages: [
         { 
@@ -23,34 +29,40 @@ export async function handleGeneratePost(request: Request, env: Env): Promise<Re
       ]
     });
 
+    const generatedText = captionResponse.response;
+
     // 2. Generate Image using Stable Diffusion XL
     const imageResponse = await env.AI.run('@cf/stabilityai/stable-diffusion-xl-base-1.0', {
       prompt: `A high quality, professional, photorealistic social media image representing: ${prompt}`,
     });
 
-    // 3. Store the generated Image in Cloudflare R2
-    const imageId = crypto.randomUUID();
-    const imageKey = `generated/${imageId}.png`;
+    // 3. DIRECT IMAGE FIX (Bypass R2 yourdomain.com error)
+    // Hum raw image ko Base64 format mein convert kar rahe hain
+    const imageBuffer = await new Response(imageResponse).arrayBuffer();
+    const bytes = new Uint8Array(imageBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    const base64Image = btoa(binary);
     
-    // imageResponse is a byte array/stream from the AI model
-    await env.IMAGE_BUCKET.put(imageKey, imageResponse, {
-      httpMetadata: { contentType: 'image/png' }
-    });
+    // Website ko directly Base64 data de rahe hain
+    const imageUrl = `data:image/png;base64,${base64Image}`;
 
-    // Construct the public URL (replace with your actual R2 public bucket domain)
-    const imageUrl = `https://r2-public.yourdomain.com/${imageKey}`;
-
-    // Return the combined payload to the Next.js frontend
+    // Return Data to Frontend
     return new Response(JSON.stringify({
       success: true,
-      caption: captionResponse.response,
-      imageUrl: imageUrl
+      imageUrl: imageUrl,     // Image ke liye
+      caption: generatedText, // Agar frontend 'caption' use kar raha hai
+      copy: generatedText     // Agar frontend 'copy' use kar raha hai (Taaki undefined na aaye!)
     }), {
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("AI Generation Failed:", error);
-    return new Response(JSON.stringify({ error: "AI processing failed." }), { status: 500 });
+    return new Response(JSON.stringify({ error: "AI processing failed." }), { 
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    });
   }
 }
