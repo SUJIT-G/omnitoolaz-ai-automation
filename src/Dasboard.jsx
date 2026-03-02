@@ -70,7 +70,7 @@ function AIPostGenerator() {
   const [result, setResult] = useState(null);
 
   // UPDATE: Ab hum aapka naya custom domain use kar rahe hain
-  const WORKER_URL = "https://ai.omnitoolz.in/api/generate-post";
+  const WORKER_URL = "https://omnitoolaz-ai-automation/generate-post";
 
   const handleGenerate = async () => {
     if (!prompt) return;
