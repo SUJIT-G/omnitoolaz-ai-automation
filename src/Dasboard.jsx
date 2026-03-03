@@ -5,7 +5,7 @@ function AIPostGenerator() {
   const [result, setResult] = useState(null);
 
   // 🚨 YAHAN APNA SAHI WORKER URL DAALEIN (Niche padhein)
-  const WORKER_URL = "https://omnitoolaz-ai-automation.pages.dev"; // <-- Isko check karein
+  const WORKER_URL = "https://omnitoolaz-ai-automation.devsujit.workers.dev"; // <-- Isko check karein
 
   const handleGenerate = async () => {
     if (!prompt) return;
